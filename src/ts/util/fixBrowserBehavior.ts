@@ -3,7 +3,7 @@ import {highlightToolbar as highlightToolbarIR} from "../ir/highlightToolbar";
 import {processAfterRender} from "../ir/process";
 import {uploadFiles} from "../upload";
 import {setHeaders} from "../upload/setHeaders";
-import {processCodeRender, processPasteCode} from "../util/processCode";
+import {processCodeRender, processPasteCode, syncUpdateCodePreview} from "../util/processCode";
 import {afterRenderEvent} from "../wysiwyg/afterRenderEvent";
 import {highlightToolbar} from "../wysiwyg/highlightToolbar";
 import {isCtrl, isFirefox} from "./compatibility";
@@ -25,6 +25,7 @@ import {
     setRangeByWbr,
     setSelectionByPosition, setSelectionFocus,
 } from "./selection";
+import {log} from "../util/log";
 
 // https://github.com/Vanessa219/vditor/issues/361
 export const fixCJKPosition = (range: Range, event: KeyboardEvent) => {
@@ -112,9 +113,16 @@ const goPreviousCell = (cellElement: HTMLElement, range: Range, isSelected = tru
 
 export const insertAfterBlock = (vditor: IVditor, event: KeyboardEvent, range: Range, element: HTMLElement,
                                  blockElement: HTMLElement) => {
+
     const position = getSelectPosition(element, range);
-    if ((event.key === "ArrowDown" && element.textContent.trimRight().substr(position.start).indexOf("\n") === -1) ||
-        (event.key === "ArrowRight" && position.start >= element.textContent.trimRight().length)) {
+    let elementContent = element.textContent.trimRight()
+    const preRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker--pre");
+    if (preRenderElement && preRenderElement.tagName === "PRE") {
+      // 如果时代码块则不需要trimRight()
+      elementContent = element.textContent
+    }
+    if ((event.key === "ArrowDown" && elementContent.substr(position.start).indexOf("\n") === -1) ||
+        (event.key === "ArrowRight" && position.start >= elementContent.length)) {
         const nextElement = blockElement.nextElementSibling;
         if (!nextElement ||
             (nextElement && (nextElement.tagName === "TABLE" || nextElement.getAttribute("data-type")))) {
@@ -341,7 +349,7 @@ export const setTableAlign = (tableElement: HTMLTableElement, type: string) => {
         tableElement.rows[k].cells[currentColumn].setAttribute("align", type);
     }
 };
-
+// 是否为分隔线（***、---、___）
 export const isHrMD = (text: string) => {
     // - _ *
     const marker = text.trimRight().split("\n").pop();
@@ -367,11 +375,11 @@ export const isHrMD = (text: string) => {
     }
     return false;
 };
-
+// 是否为多个或单个等号或减号
 export const isHeadingMD = (text: string) => {
     // - =
     const textArray = text.trimRight().split("\n");
-    text = textArray.pop();
+    text = textArray.pop(); // 有换行，则以换行分割，取最后一个字符串
 
     if (text.indexOf("    ") === 0 || text.indexOf("\t") === 0) {
         return false;
@@ -381,6 +389,7 @@ export const isHeadingMD = (text: string) => {
     if (text === "" || textArray.length === 0) {
         return false;
     }
+    
     if (text.replace(/-/g, "") === ""
         || text.replace(/=/g, "") === "") {
         return true;
@@ -861,11 +870,45 @@ export const fixCodeBlock = (vditor: IVditor, event: KeyboardEvent, codeRenderEl
     }
 
     // tab
-    // TODO shift + tab, shift and 选中文字
-    if (vditor.options.tab && event.key === "Tab" && !event.shiftKey && range.toString() === "") {
-        range.insertNode(document.createTextNode(vditor.options.tab));
-        range.collapse(false);
-        execAfterRender(vditor);
+    // [func ok] shift + tab, shift and 选中文字, jay
+    if (vditor.options.tab && event.key === "Tab") {
+        if (!event.shiftKey && range.toString() === "") {
+          range.insertNode(document.createTextNode(vditor.options.tab));
+          range.collapse(false);
+          execAfterRender(vditor);
+        } else {
+          // select multi char in code block
+          let pos = getSelectPosition(codeRenderElement, range)
+          let s = range.toString()
+          if (!isCtrl(event) && !event.shiftKey && !event.altKey) {
+            // tab
+            let isNeedPreTab = false
+            if (pos.start === 0) {
+              isNeedPreTab = true
+            } else if (pos.start > 0) {
+              if (codeRenderElement.firstElementChild.textContent.substr(pos.start - 1, 1) === "\n") {
+                isNeedPreTab = true
+              }
+            }
+            s = s.replace(/\n/g, "\n" + vditor.options.tab)
+            if (isNeedPreTab) {
+              s = vditor.options.tab + s
+            }
+          } else if (event.shiftKey) {
+            // shift + tab 
+            let isNeedRemovePreTab = false
+            if (s.length >= vditor.options.tab.length && s.substr(0, vditor.options.tab.length) === vditor.options.tab) {
+              s = s.substr(vditor.options.tab.length)
+            }
+            let reg = new RegExp("\n"+vditor.options.tab, 'g');
+            s = s.replace(reg, "\n")
+          }
+          range.deleteContents()
+          range.insertNode(document.createTextNode(s))
+          // bug fixed。需要同步代码中的预览模式，否则换行符无法被同步。jay
+          syncUpdateCodePreview(codeRenderElement, vditor)
+        }
+
         event.preventDefault();
         return true;
     }
@@ -887,15 +930,16 @@ export const fixCodeBlock = (vditor: IVditor, event: KeyboardEvent, codeRenderEl
 
     // 换行
     if (!isCtrl(event) && !event.altKey && event.key === "Enter") {
+        // 如果原代码不是以换行符结尾则生成一个换行
         if (!codeRenderElement.firstElementChild.textContent.endsWith("\n")) {
-            codeRenderElement.firstElementChild.insertAdjacentText("beforeend", "\n");
+            codeRenderElement.firstElementChild.insertAdjacentText("beforeend", "\n");  
         }
-        range.insertNode(document.createTextNode("\n"));
-        range.collapse(false);
-        setSelectionFocus(range);
-        execAfterRender(vditor);
-        scrollCenter(vditor);
-        event.preventDefault();
+        range.insertNode(document.createTextNode("\n"));  // 手动插入换行
+        range.collapse(false);   // 移动到末尾
+        // bug fixed。需要同步代码中的预览模式，否则换行符无法被同步。jay
+        syncUpdateCodePreview(codeRenderElement, vditor)
+    
+        event.preventDefault(); // 阻止后续换行input事件自动生成的代码
         return true;
     }
     return false;

@@ -36,6 +36,7 @@ import {getCursorPosition, getEditorRange, setSelectionByPosition} from "./ts/ut
 import {WYSIWYG} from "./ts/wysiwyg";
 import {input} from "./ts/wysiwyg/input";
 import {renderDomByMd} from "./ts/wysiwyg/renderDomByMd";
+import {setEditMode} from "./ts/toolbar/EditMode";
 
 class Vditor extends VditorMethod {
 
@@ -326,6 +327,7 @@ class Vditor extends VditorMethod {
             renderDomByMd(this.vditor, markdown, false);
         } else {
             this.vditor.ir.element.innerHTML = this.vditor.lute.Md2VditorIRDOM(markdown);
+            // console.log(this.vditor.ir.element.innerHTML)
             processAfterRender(this.vditor, {
                 enableAddUndoStack: true,
                 enableHint: false,
@@ -342,6 +344,10 @@ class Vditor extends VditorMethod {
             }
             this.clearCache();
         }
+    }
+
+    public setEditMode(mode: string, e: Event | string) {
+      setEditMode(this.vditor, mode, e)
     }
 }
 

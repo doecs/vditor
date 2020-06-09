@@ -49,6 +49,7 @@ if (window.innerWidth < 768) {
 }
 
 window.vditor = new Vditor('vditor', {
+  mode: 'ir',
   toolbar,
   height: window.innerHeight + 100,
   outline: true,
@@ -75,7 +76,7 @@ window.vditor = new Vditor('vditor', {
       'j': 'https://unpkg.com/vditor@1.3.1/dist/images/emoji/j.png',
     },
   },
-  tab: '\t',
+  tab: '    ',
   upload: {
     accept: 'image/*,.mp3, .wav, .rar',
     token: 'test',

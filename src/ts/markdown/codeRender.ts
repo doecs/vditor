@@ -19,6 +19,7 @@ export const codeRender = (element: HTMLElement, lang: (keyof II18nLang) = "zh_C
             return;
         }
 
+        // for what??
         let codeText = e.innerText;
         if (e.classList.contains("highlight-chroma")) {
             const codeElement = document.createElement("code");
@@ -28,7 +29,7 @@ export const codeRender = (element: HTMLElement, lang: (keyof II18nLang) = "zh_C
             });
             codeText = codeElement.innerText;
         }
-
+        // 生成复制按钮，及复制事件
         const divElement = document.createElement("div");
         divElement.className = "vditor-copy";
         divElement.innerHTML = `<span aria-label="${i18n[lang].copy}"
@@ -37,10 +38,10 @@ class="vditor-tooltipped vditor-tooltipped__w"
 onclick="this.previousElementSibling.select();document.execCommand('copy');` +
             `this.setAttribute('aria-label', '${i18n[lang].copied}')">${copySVG}</span>`;
         const textarea = document.createElement("textarea");
-        textarea.value = code160to32(codeText);
-        divElement.insertAdjacentElement("afterbegin", textarea);
-
-        e.before(divElement);
+        textarea.value = code160to32(codeText); // 转换非间断空格为普通空格
+        // 将纯文本代码拷贝到复制按钮元素下的第一个元素共复制脚本取得
+        divElement.insertAdjacentElement("afterbegin", textarea); 
+        e.before(divElement); // 将复制元素插入到<code>前
         e.style.maxHeight = (window.outerHeight - 40) + "px";
     });
 };

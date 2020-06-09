@@ -12,15 +12,16 @@ import {processAfterRender} from "./process";
 
 export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
     let blockElement = hasClosestBlock(range.startContainer);
+    
     // 前后可以输入空格
     if (blockElement && !ignoreSpace) {
         if (isHrMD(blockElement.innerHTML) || isHeadingMD(blockElement.innerHTML)) {
-            return;
+            return; //如果是分隔符则不处理
         }
-
+  
         // 前后空格处理
         const startOffset = getSelectPosition(blockElement, range).start;
-
+        console.log('startOffset:' + startOffset)
         // 开始可以输入空格
         let startSpace = true;
         for (let i = startOffset - 1;
@@ -28,7 +29,7 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
              i > blockElement.textContent.substr(0, startOffset).lastIndexOf("\n");
              i--) {
             if (blockElement.textContent.charAt(i) !== " " &&
-                // 多个 tab 前删除不形成代码块 https://github.com/Vanessa219/vditor/issues/162 1
+                // 多个 tab 前删除不形成代码块 https://github.com/Vanessa219/vditor/issues/1621
                 blockElement.textContent.charAt(i) !== "\t") {
                 startSpace = false;
                 break;
@@ -37,7 +38,6 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
         if (startOffset === 0) {
             startSpace = false;
         }
-
         // 结尾可以输入空格
         let endSpace = true;
         for (let i = startOffset - 1; i < blockElement.textContent.length; i++) {
@@ -46,7 +46,6 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
                 break;
             }
         }
-
         if ((startSpace && !blockElement.querySelector(".language-mindmap")) || endSpace) {
             if (endSpace) {
                 const markerElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker");
@@ -58,23 +57,26 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
                         // FireFox https://github.com/Vanessa219/vditor/issues/239
                         previousNode.classList.remove("vditor-ir__node--expand");
                     }
-                    return;
                 }
             } else {
-                return;
+                // startSpace and !endSpace  
+                const preRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker--pre");
+                if (preRenderElement && preRenderElement.tagName === "PRE") {
+                  // bug fixed 如果是在代码块，则需要进行lute渲染代码块否则. jay
+                } else {
+                  return;
+                }                
             }
         }
     }
-
     vditor.ir.element.querySelectorAll(".vditor-ir__node--expand").forEach((item) => {
         item.classList.remove("vditor-ir__node--expand");
     });
-
     if (!blockElement) {
         // 使用顶级块元素，应使用 innerHTML
         blockElement = vditor.ir.element;
     }
-
+    // 用<wbr>来代表光标的位置，使得通过lute重新渲染后的结果也能重现光标位置。jay
     if (!blockElement.querySelector("wbr")) {
         const previewRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__preview");
         if (previewRenderElement) {
@@ -89,6 +91,7 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
         // document.exeComment insertHTML 会插入 wbr
         range.insertNode(document.createElement("wbr"));
     }
+    
     // 清除浏览器自带的样式
     blockElement.querySelectorAll("[style]").forEach((item) => {
         item.removeAttribute("style");
@@ -161,7 +164,6 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
     log("SpinVditorIRDOM", html, "argument", vditor.options.debugger);
     html = vditor.lute.SpinVditorIRDOM(html);
     log("SpinVditorIRDOM", html, "result", vditor.options.debugger);
-
     if (isIRElement) {
         blockElement.innerHTML = html;
     } else {

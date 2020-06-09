@@ -38,9 +38,15 @@
         a {
             color: #4285f4;
         }
+        /* ir模式下代码编辑时不显示预览 */
+        /* .vditor-ir__node--expand .vditor-ir__preview {
+          display: none;
+        } */
     </style>
 </head>
 <body>
+  <p><button onClick="window.onTestClick(event)">test</button></p>
+  <p><button onClick="window.onTest2Click(event)">test2</button></p>
 <h2>
     <a href="https://vditor.b3log.org" target="_blank">官网</a> |
     <a href="/render.html">Render</a> |
@@ -54,5 +60,33 @@
 <li>bar</li>
 </ul>
 </div>
+<script>
+  
+window.onTestClick = function(e) {
+  // this.console.log(e)
+  // if (window.vditor.getCurrentMode() === 'ir') {
+  //   window.vditor.setEditMode('sv', e)
+  //   window.vditor.setPreviewMode('editor')
+  // } else {
+  //   window.vditor.setEditMode('ir', e)
+  // }
+  window.vditor.setValue(`\`\`\`js
+INIT_NEW_TAG (state) {
+    state.currentTag = {
+      owner_id: this.state.User.currentUser.id,
+    }
+}
+\`\`\``)
+}
+window.onTest2Click = function(e) {
+  window.vditor.setTheme('dark', 'dark',  'native');
+  window.vditor.disabled()
+}
+
+window.addEventListener('input', function(e) {
+  console.log('win input')
+})
+
+</script>
 </body>
 </html>

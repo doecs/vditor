@@ -48,6 +48,7 @@ export const scrollCenter = (vditor: IVditor) => {
 
 export const hotkeyEvent = (vditor: IVditor, editorElement: HTMLElement) => {
     editorElement.addEventListener("keydown", (event: KeyboardEvent & { target: HTMLElement }) => {
+        console.log('keydown')
         // hint: 上下选择
         if ((vditor.options.hint.at || vditor.toolbar.elements.emoji) && vditor.hint.select(event, vditor)) {
             return;

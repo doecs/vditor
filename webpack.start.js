@@ -134,7 +134,7 @@ module.exports = {
   devServer: {
     contentBase: path.join(__dirname, '.'),
     port: 9000,
-    host: '0.0.0.0',
+    host: '127.0.0.1',
     before: (app) => {
       app.get('/dist/js/lute/lute.wasm.br', function (req, res, next) {
         res.set({

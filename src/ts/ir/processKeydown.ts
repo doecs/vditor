@@ -149,11 +149,12 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
         return true;
     }
 
-    // tab
+    // tab(not in code block)
     if (fixTab(vditor, range, event)) {
         return true;
     }
 
+    // backspace(not in code block)
     if (event.key === "Backspace" && !isCtrl(event) && !event.shiftKey && !event.altKey && range.toString() === "") {
         if (fixDelete(vditor, range, event, pElement)) {
             return true;
@@ -182,6 +183,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
             return true;
         }
     }
+
     fixCursorDownInlineMath(range, event.key);
 
     return false;

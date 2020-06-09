@@ -3,7 +3,7 @@ import {disableToolbar, enableToolbar, removeCurrentToolbar, setCurrentToolbar} 
 import {hasClosestByAttribute, hasClosestByMatchTag} from "../util/hasClosest";
 import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
 import {getEditorRange, selectIsEditor} from "../util/selection";
-
+// 根据当前编辑器中的光标位置，设定toolbar中按钮的状态
 export const highlightToolbar = (vditor: IVditor) => {
     clearTimeout(vditor.ir.hlToolbarTimeoutId);
     vditor.ir.hlToolbarTimeoutId = window.setTimeout(() => {

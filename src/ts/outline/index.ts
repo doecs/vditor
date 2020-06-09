@@ -13,16 +13,19 @@ export class Outline {
     }
 
     public render(vditor: IVditor) {
+      // 当需要显示时
         if (this.element.style.display === "block") {
             if (vditor.preview.element.style.display === "block") {
                 outlineRender(vditor.preview.element.lastElementChild as HTMLElement,
-                    this.element.lastElementChild, vditor);
+                    this.element.lastElementChild, vditor); // 当显示预览时，对预览进行渲染
             } else {
-                outlineRender(vditor[vditor.currentMode].element, this.element.lastElementChild, vditor);
+                outlineRender(vditor[vditor.currentMode].element, 
+                  this.element.lastElementChild, vditor); // 其他模式则，则对相对应模式的元素进行渲染
             }
         }
     }
 
+    // 是否显示大纲
     public toggle(vditor: IVditor, show = true) {
         const btnElement = vditor.toolbar.elements.outline?.firstElementChild;
         if (show && window.innerWidth >= Constants.MOBILE_WIDTH) {

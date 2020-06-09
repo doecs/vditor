@@ -59,7 +59,7 @@
     "lint": "tslint --fix -c tslint.json '{src,types}/**/*.ts'",
     "test:watch": "jest --watch",
     "test": "jest --coverage",
-    "start": "webpack-dev-server --config webpack.start.js",
+    "dev": "webpack-dev-server --config webpack.start.js --open",
     "build": "webpack"
   },
   "keywords": [

@@ -6,6 +6,9 @@ import {highlightRender} from "../markdown/highlightRender";
 import {mathRender} from "../markdown/mathRender";
 import {mermaidRender} from "../markdown/mermaidRender";
 import {mindmapRender} from "../markdown/mindmapRender";
+import {
+  hasClosestBlock,
+} from "./hasClosest";
 
 export const processPasteCode = (html: string, text: string, type = "sv") => {
     const tempElement = document.createElement("div");
@@ -82,3 +85,36 @@ export const processCodeRender = (previewPanel: HTMLElement, vditor: IVditor) =>
 
     previewPanel.setAttribute("data-render", "1");
 };
+
+export const syncUpdateCodePreview = (codeElement: HTMLElement, vditor: IVditor) => {
+  let blockElement = hasClosestBlock(codeElement);
+  if (blockElement) {
+    let html = blockElement.outerHTML;
+    // log("SpinVditorIRDOM", html, "argument", vditor.options.debugger);
+    html = vditor.lute.SpinVditorIRDOM(html);
+    // log("SpinVditorIRDOM", html, "result", vditor.options.debugger);
+    let tempCodeBlock = new DOMParser().parseFromString(html, 'text/html');
+    html = tempCodeBlock.querySelector('.vditor-ir__preview code').innerHTML
+    blockElement.querySelector('.vditor-ir__preview code').innerHTML = html;
+  }
+  // 另外一种方式：（只适合没有多字符被选定的场合）
+  // range.insertNode(document.createElement("wbr"));  // 用wbr标记光标位置
+  // vditor.ir.element.querySelectorAll(".vditor-ir__node--expand").forEach((item) => {
+  //   item.classList.remove("vditor-ir__node--expand");
+  // });
+  // let blockElement = hasClosestBlock(codeElement);
+  // if (blockElement) {
+  //   let html = blockElement.outerHTML;
+  //   log("SpinVditorIRDOM", html, "argument", vditor.options.debugger);
+  //   html = vditor.lute.SpinVditorIRDOM(html);
+  //   log("SpinVditorIRDOM", html, "result", vditor.options.debugger);
+  //   blockElement.outerHTML = html;
+  // }
+  // setSelectionFocus(range);
+  // execAfterRender(vditor);
+  // scrollCenter(vditor);
+  // setRangeByWbr(vditor.ir.element, range);  // 根据wbr设置光标位置。jay
+  // vditor.ir.element.querySelectorAll(".vditor-ir__preview[data-render='2']").forEach((item: HTMLElement) => {
+  //     processCodeRender(item, vditor);
+  // });
+}

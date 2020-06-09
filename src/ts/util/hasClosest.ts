@@ -33,7 +33,7 @@ export const hasClosestByAttribute = (element: Node, attr: string, value: string
     }
     return isClosest && e;
 };
-
+// 向上查找最近的含有data-block属性的标签（包括:h1~h6,p,ol,ul,blockquote)
 export const hasClosestBlock = (element: Node) => {
     if (!element) {
         return false;
@@ -86,7 +86,7 @@ export const hasClosestByMatchTag = (element: Node, nodeName: string) => {
     }
     return isClosest && e;
 };
-
+// 向上层查找包含指定类名的元素
 export const hasClosestByClassName = (element: Node, className: string) => {
     if (!element) {
         return false;

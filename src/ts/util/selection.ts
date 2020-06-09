@@ -2,18 +2,21 @@ import {Constants} from "../constants";
 import {isChrome} from "./compatibility";
 import {hasClosestBlock, hasClosestByClassName} from "./hasClosest";
 
+// 取得当前编辑器的选区
 export const getEditorRange = (element: HTMLElement) => {
     let range: Range;
     if (getSelection().rangeCount > 0) {
         range = getSelection().getRangeAt(0);
+        // 选择区域的开始节点在元素内，则返回该选择区
         if (element.isEqualNode(range.startContainer) || element.contains(range.startContainer)) {
             return range;
         }
     }
+    // 否则建立选区，开始节点设为该元素
     element.focus();
     range = element.ownerDocument.createRange();
     range.setStart(element, 0);
-    range.collapse(true);
+    range.collapse(true); // 选区折叠到开始节点
     return range;
 };
 
@@ -64,7 +67,7 @@ export const getCursorPosition = (editor: HTMLElement) => {
         top: cursorRect.top - parentRect.top,
     };
 };
-
+// 选区是否在editor内
 export const selectIsEditor = (editor: HTMLElement, range?: Range) => {
     if (!range) {
         if (getSelection().rangeCount === 0) {
@@ -149,6 +152,8 @@ export const setSelectionByPosition = (start: number, end: number, editor: HTMLE
                 range.setEnd(pNode, 0);
             } else {
                 if (pNode.childNodes[0].nodeType === 3) {
+                  console.log(pNode.childNodes[0].textContent.length)
+                  console.log(end - charIndex)
                     range.setEnd(pNode.childNodes[0], end - charIndex);
                 } else if (pNode.nextSibling) {
                     range.setEndBefore(pNode.nextSibling);
@@ -169,7 +174,7 @@ export const setSelectionByPosition = (start: number, end: number, editor: HTMLE
     setSelectionFocus(range);
     return range;
 };
-
+// 根据<wbr>标签位置，定位并设置光标位置后移除<wbr>标签
 export const setRangeByWbr = (element: HTMLElement, range: Range) => {
     const wbrElement = element.querySelector("wbr");
     if (!wbrElement) {

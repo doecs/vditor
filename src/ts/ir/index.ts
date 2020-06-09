@@ -13,6 +13,15 @@ import {highlightToolbar} from "./highlightToolbar";
 import {input} from "./input";
 import {processAfterRender, processHint} from "./process";
 
+/**
+ * template look like:
+ * `
+ * <div class="vditor-ir">
+ *   <pre class="vditor-reset" contenteditable="true">
+ *   </pre>
+ * </div>
+ * `
+ */
 class IR {
     public element: HTMLPreElement;
     public processTimeoutId: number;
@@ -29,14 +38,14 @@ class IR {
 
         this.element = divElement.firstElementChild as HTMLPreElement;
 
-        this.bindEvent(vditor);
+        this.bindEvent(vditor); // 绑定事件：copy、paste、drop、compositionend、compositionstart、input、click、keyup
 
-        document.execCommand("DefaultParagraphSeparator", false, "p");
+        document.execCommand("DefaultParagraphSeparator", false, "p");  // 将回车后的段落分隔符改为p标签（默认：div）
 
-        focusEvent(vditor, this.element);
-        blurEvent(vditor, this.element);
-        hotkeyEvent(vditor, this.element);
-        selectEvent(vditor, this.element);
+        focusEvent(vditor, this.element); // 焦点事件
+        blurEvent(vditor, this.element); // 失焦事件
+        hotkeyEvent(vditor, this.element);  // 快捷键
+        selectEvent(vditor, this.element);  // 选择事件
     }
 
     private bindEvent(vditor: IVditor) {
@@ -77,15 +86,17 @@ class IR {
                 });
         }
 
+        // 非英文输入法打开时，按键选择文字后触发
         this.element.addEventListener("compositionend", (event: InputEvent) => {
             input(vditor, getSelection().getRangeAt(0).cloneRange());
         });
-
+        // 非英文输入法打开时，按键时触发
         this.element.addEventListener("compositionstart", (event: InputEvent) => {
             this.composingLock = true;
         });
 
         this.element.addEventListener("input", (event: InputEvent) => {
+          console.log('input')
             if (this.preventInput) {
                 this.preventInput = false;
                 return;
@@ -97,6 +108,7 @@ class IR {
         });
 
         this.element.addEventListener("click", (event: MouseEvent & { target: HTMLInputElement }) => {
+            // 处理input类型（checkbox）
             if (event.target.tagName === "INPUT") {
                 if (event.target.checked) {
                     event.target.setAttribute("checked", "checked");
@@ -107,9 +119,10 @@ class IR {
                 processAfterRender(vditor);
                 return;
             }
-
+            
+            // 
             const range = getEditorRange(this.element);
-
+            // 当点击最后一行时自动添加一个空的p标签
             if (event.target.isEqualNode(this.element) && this.element.lastElementChild && range.collapsed) {
                 const lastRect = this.element.lastElementChild.getBoundingClientRect();
                 if (event.y > lastRect.top + lastRect.height) {
@@ -148,6 +161,7 @@ class IR {
         });
 
         this.element.addEventListener("keyup", (event) => {
+            console.log('keyup')
             if (event.isComposing || isCtrl(event)) {
                 return;
             }
