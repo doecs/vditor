@@ -1,3 +1,4 @@
+import {Constants} from "../constants";
 import {hidePanel} from "../toolbar/setToolbar";
 import {isCtrl} from "../util/compatibility";
 import {
@@ -17,59 +18,92 @@ import {
     hasClosestByClassName,
     hasClosestByMatchTag,
 } from "../util/hasClosest";
-import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
-import {getEditorRange, getSelectPosition} from "../util/selection";
+import {hasClosestByHeadings, hasClosestByTag} from "../util/hasClosestByHeadings";
+import {getEditorRange, getElSelectedPosition} from "../util/selection";
 
+/**
+ * 处理keydown事件
+ * return true: 结束keydown事件，false：继续剩余的keydown事件
+ * @param vditor 
+ * @param event 
+ */
 export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
     vditor.ir.composingLock = event.isComposing;
     if (event.isComposing) {
-        return false;
+        return false; // 如果是进入输入法语言输入模式，则不处理
     }
 
-    // 添加第一次记录 undo 的光标
+    // 除方向键外，记录当前光标位置及DOM到回退栈中
     if (event.key.indexOf("Arrow") === -1) {
         vditor.irUndo.recordFirstWbr(vditor, event);
     }
 
-    const range = getEditorRange(vditor.ir.element);
+    const range = getEditorRange(vditor.ir.element);  // 取得editor内的range
     const startContainer = range.startContainer;
 
-    fixCJKPosition(range, event);
+    fixCJKPosition(range, event); // p tag输入时如果是开始位置输入，则先插入占位符
 
-    fixHR(range);
+    fixHR(range); // firefox时，输入位置的容器是hr时，将输入点移到hr前的位置
 
-    // 仅处理以下快捷键操作
-    if (event.key !== "Enter" && event.key !== "Tab" && event.key !== "Backspace" && event.key.indexOf("Arrow") === -1
-        && !isCtrl(event) && event.key !== "Escape") {
+    // 仅处理包含有（Enter、Tab、Backspace、ArrowXxx、Ctrl、Esc）的按键处理
+    if (event.key !== "Enter" && 
+      event.key !== "Tab" && 
+      event.key !== "Backspace" && 
+      event.key.indexOf("Arrow") === -1 && 
+      !isCtrl(event) && 
+      event.key !== "Escape") {
         return false;
     }
 
-    // 斜体、粗体、内联代码块中换行
+    // [bug fixed]Enter键处理。H标签光标放在最前回车后，新建行前面仍有H的标记（应该是生成普通段落） jay
+    const headEl = hasClosestByHeadings(startContainer);
+    if (event.key === "Enter" && headEl && range.startOffset === 0 &&
+          !isCtrl(event) && !event.altKey && !event.shiftKey) {
+        headEl.insertAdjacentHTML("beforebegin", `<p data-block="0">${Constants.ZWSP}</p>`);
+        event.preventDefault();
+        return true;
+    }
+
+    // [bug fixed]Enter键处理。vditor空行enter键无法添加多个空行，滚动条会上下移动一下。
+    const pBlockEl = hasClosestBlock(startContainer)
+    console.log(pBlockEl)
+    console.log(pBlockEl ? pBlockEl.tagName : 'none')
+    console.log(range.startOffset)
+    if (event.key === "Enter" && pBlockEl && range.startOffset === 0 && pBlockEl.tagName === 'P'
+          && !isCtrl(event) && !event.altKey && !event.shiftKey) {
+        console.log(2)
+        pBlockEl.insertAdjacentHTML("beforebegin", `<p data-block="0">${Constants.ZWSP}</p>`);
+        event.preventDefault();
+        return true;
+    }
+
+    // Enter键处理。斜体、粗体、删除线、内联代码块（用`包裹）中输入时，
     const newlineElement = hasClosestByAttribute(startContainer, "data-newline", "1");
     if (!isCtrl(event) && !event.altKey && !event.shiftKey && event.key === "Enter" && newlineElement
         && range.startOffset < newlineElement.textContent.length) {
         const beforeMarkerElement = newlineElement.previousElementSibling;
+        // 插入该输入项的前后marker标识符到输入点（将输入项以输入点为界，分隔为两个相同的类型的输入项）
         if (beforeMarkerElement) {
             range.insertNode(document.createTextNode(beforeMarkerElement.textContent));
-            range.collapse(false);
+            range.collapse(false); //收缩到end
         }
         const afterMarkerElement = newlineElement.nextSibling;
         if (afterMarkerElement) {
             range.insertNode(document.createTextNode(afterMarkerElement.textContent));
-            range.collapse(true);
+            range.collapse(true); //收缩到start
         }
     }
 
-    const pElement = hasClosestByMatchTag(startContainer, "P");
-    // md 处理
+    const pElement = hasClosestByMatchTag(startContainer, "P"); // 取得
+    // Enter、Space键在P标签内的处理。md格式的修复
     if (fixMarkdown(event, vditor, pElement, range)) {
         return true;
     }
-    // li
+    // Enter、Space、Tab键在li标签内的处理。li格式的修复
     if (fixList(range, vditor, pElement, event)) {
         return true;
     }
-    // blockquote
+    // Enter、Space键及wysiwyg模式下blockquote快捷键的处理。blockquote格式的修复。
     if (fixBlockquote(vditor, range, event, pElement)) {
         return true;
     }
@@ -111,7 +145,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
         }
 
         if (event.key === "Backspace") {
-            const start = getSelectPosition(preBeforeElement).start;
+            const start = getElSelectedPosition(preBeforeElement).start;
             if (start === 1) { // 删除零宽空格
                 range.setStart(startContainer, 0);
             }
@@ -140,6 +174,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
             return true;
         }
     }
+    
     if (fixTable(vditor, event, range)) {
         return true;
     }
@@ -163,7 +198,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
         const headingElement = hasClosestByHeadings(startContainer);
         if (headingElement) {
             const headingLength = headingElement.firstElementChild.textContent.length;
-            if (getSelectPosition(headingElement).start === headingLength) {
+            if (getElSelectedPosition(headingElement).start === headingLength) {
                 range.setStart(headingElement.firstElementChild.firstChild, headingLength - 1);
                 range.collapse(true);
             }
@@ -183,7 +218,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
             return true;
         }
     }
-
+    // 修复：光标在内联数学公式中无法向下移动。
     fixCursorDownInlineMath(range, event.key);
 
     return false;

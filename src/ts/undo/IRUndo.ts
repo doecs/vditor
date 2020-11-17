@@ -79,11 +79,12 @@ class IRUndo {
             // Safari keydown 在 input 之后，不需要重复记录历史
             return;
         }
-        getSelection().getRangeAt(0).insertNode(document.createElement("wbr"));
+        getSelection().getRangeAt(0).insertNode(document.createElement("wbr")); // 将插入符替换为wbr
+        // 将修改后的结果推入回退栈
         this.undoStack[0][0].diffs[0][1] = vditor.lute.SpinVditorIRDOM(vditor.ir.element.innerHTML);
         this.lastText = this.undoStack[0][0].diffs[0][1];
         if (vditor.ir.element.querySelector("wbr")) {
-            vditor.ir.element.querySelector("wbr").remove();
+            vditor.ir.element.querySelector("wbr").remove(); // 删除wbr标记
         }
         // 不能添加 setSelectionFocus(cloneRange); 否则 windows chrome 首次输入会烂
     }

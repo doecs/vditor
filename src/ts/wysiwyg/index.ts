@@ -3,7 +3,7 @@ import {hidePanel} from "../toolbar/setToolbar";
 import {uploadFiles} from "../upload";
 import {isCtrl, isFirefox} from "../util/compatibility";
 import {blurEvent, focusEvent, hotkeyEvent, scrollCenter, selectEvent} from "../util/editorCommonEvent";
-import {isHeadingMD, isHrMD, paste, renderToc} from "../util/fixBrowserBehavior";
+import {isSetextHeadingMD, isHrMD, paste, renderToc} from "../util/fixBrowserBehavior";
 import {
     hasClosestBlock, hasClosestByAttribute,
     hasClosestByClassName, hasClosestByMatchTag,
@@ -11,7 +11,7 @@ import {
 import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
 import {
     getEditorRange,
-    getSelectPosition,
+    getElSelectedPosition,
     setRangeByWbr,
 } from "../util/selection";
 import {afterRenderEvent} from "./afterRenderEvent";
@@ -191,7 +191,7 @@ class WYSIWYG {
             }
 
             // 前后空格处理
-            const startOffset = getSelectPosition(blockElement, range).start;
+            const startOffset = getElSelectedPosition(blockElement, range).start;
 
             // 开始可以输入空格
             let startSpace = true;
@@ -224,7 +224,7 @@ class WYSIWYG {
             }
 
             if ((startSpace && !blockElement.querySelector(".language-mindmap"))
-                || endSpace || isHrMD(blockElement.innerHTML) || isHeadingMD(blockElement.innerHTML)) {
+                || endSpace || isHrMD(vditor, blockElement.innerHTML) || isSetextHeadingMD(vditor, blockElement.innerHTML)) {
                 return;
             }
 

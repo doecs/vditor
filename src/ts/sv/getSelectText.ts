@@ -1,7 +1,7 @@
-import {selectIsEditor} from "../util/selection";
+import {isRangInElement} from "../util/selection";
 
 export const getSelectText = (editor: HTMLElement, range?: Range) => {
-    if (selectIsEditor(editor, range)) {
+    if (isRangInElement(editor, range)) {
         return getSelection().toString();
     }
     return "";

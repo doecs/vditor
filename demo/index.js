@@ -51,14 +51,24 @@ if (window.innerWidth < 768) {
 window.vditor = new Vditor('vditor', {
   mode: 'ir',
   toolbar,
-  height: window.innerHeight + 100,
+  height: window.innerHeight - document.getElementById('div1').offsetHeight,
   outline: true,
   debugger: true,
-  typewriterMode: true,
+  typewriterMode: false,
   placeholder: 'Hello, Vditor!',
   preview: {
     markdown: {
-      toc: true,
+        autoSpace: false,
+        // chinesePunct: false,
+        // codeBlockPreview: true,
+        // fixTermTypo: false,
+        // footnotes: true,
+        // linkBase: "",
+        // listMarker: false,
+        // sanitize: true,
+        // setext: false,
+        // theme: "light",
+        toc: true,
     },
   },
   toolbarConfig: {
@@ -88,4 +98,7 @@ window.vditor = new Vditor('vditor', {
         replace('/\\s/g', '')
     },
   },
+  input: function(val) {
+    // document.getElementById('show-info').value = val
+  }
 })

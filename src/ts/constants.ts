@@ -5,7 +5,7 @@ const _VDITOR_VERSION = VDITOR_VERSION;
 export {_VDITOR_VERSION as VDITOR_VERSION};
 
 export abstract class Constants {
-    public static readonly ZWSP: string = "\u200b";
+    public static readonly ZWSP: string = "\u200b"; // 占位符（0长度不可见字符）
     public static readonly MOBILE_WIDTH: number = 520;
     public static readonly CLASS_MENU_DISABLED: string = "vditor-menu--disabled";
     public static readonly EDIT_TOOLBARS: string[] = ["emoji", "headings", "bold", "italic", "strike", "link", "list",

@@ -68,7 +68,11 @@ const mergeOptions = (options?: IPreviewOptions) => {
 
 export const md2html = (mdText: string, options?: IPreviewOptions) => {
     const mergedOptions = mergeOptions(options);
-    return addScript(`${mergedOptions.cdn}/dist/js/lute/lute.min.js`, "vditorLuteScript").then(() => {
+    
+    // const lutePath = `https://cdn.ihooy.com/plz-cdn/lute.js?${new Date().getTime()}`;
+    // // const lutePath = `${mergedOptions.cdn}/dist/js/lute/lute.min.js`;
+    // const lutePath = "src/js/lute/lute.min.js";
+    // return addScript(lutePath, "vditorLuteScript").then(() => {
         const lute = setLute({
             autoSpace: mergedOptions.markdown.autoSpace,
             chinesePunct: mergedOptions.markdown.chinesePunct,
@@ -94,8 +98,9 @@ export const md2html = (mdText: string, options?: IPreviewOptions) => {
                 },
             });
         }
+        // return lute.Md2HTML(mdText);
         return lute.Md2HTML(mdText);
-    });
+    // });
 };
 
 export const previewRender = async (previewElement: HTMLDivElement, markdown: string, options?: IPreviewOptions) => {

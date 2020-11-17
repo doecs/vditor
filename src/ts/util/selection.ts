@@ -3,19 +3,19 @@ import {isChrome} from "./compatibility";
 import {hasClosestBlock, hasClosestByClassName} from "./hasClosest";
 
 // 取得当前编辑器的选区
-export const getEditorRange = (element: HTMLElement) => {
+export const getEditorRange = (editorEl: HTMLElement) => {
     let range: Range;
     if (getSelection().rangeCount > 0) {
         range = getSelection().getRangeAt(0);
         // 选择区域的开始节点在元素内，则返回该选择区
-        if (element.isEqualNode(range.startContainer) || element.contains(range.startContainer)) {
+        if (editorEl.isEqualNode(range.startContainer) || editorEl.contains(range.startContainer)) {
             return range;
         }
     }
-    // 否则建立选区，开始节点设为该元素
-    element.focus();
-    range = element.ownerDocument.createRange();
-    range.setStart(element, 0);
+    // 如果editor中不包含当前range，或不存在range，则将焦点移到editor并且设置rang到editor的起始位置（没有设置插入符）
+    editorEl.focus();
+    range = editorEl.ownerDocument.createRange();
+    range.setStart(editorEl, 0);
     range.collapse(true); // 选区折叠到开始节点
     return range;
 };
@@ -67,8 +67,8 @@ export const getCursorPosition = (editor: HTMLElement) => {
         top: cursorRect.top - parentRect.top,
     };
 };
-// 选区是否在editor内
-export const selectIsEditor = (editor: HTMLElement, range?: Range) => {
+// selection是否在editor内
+export const isRangInElement = (el: HTMLElement, range?: Range) => {
     if (!range) {
         if (getSelection().rangeCount === 0) {
             return false;
@@ -78,7 +78,7 @@ export const selectIsEditor = (editor: HTMLElement, range?: Range) => {
     }
     const container = range.commonAncestorContainer;
 
-    return editor.isEqualNode(container) || editor.contains(container);
+    return el.isEqualNode(container) || el.contains(container);
 };
 
 export const setSelectionFocus = (range: Range) => {
@@ -87,7 +87,8 @@ export const setSelectionFocus = (range: Range) => {
     selection.addRange(range);
 };
 
-export const getSelectPosition = (editorElement: HTMLElement, range?: Range) => {
+// 取得指定元素上存在于range中的位置范围
+export const getElSelectedPosition = (el: HTMLElement, range?: Range) => {
     const position = {
         end: 0,
         start: 0,
@@ -99,16 +100,16 @@ export const getSelectPosition = (editorElement: HTMLElement, range?: Range) => 
         }
         range = window.getSelection().getRangeAt(0);
     }
-
-    if (selectIsEditor(editorElement, range)) {
-        const preSelectionRange = range.cloneRange();
-        if (editorElement.childNodes[0] && editorElement.childNodes[0].childNodes[0]) {
-            preSelectionRange.setStart(editorElement.childNodes[0].childNodes[0], 0);
+    // 如果range在editor内
+    if (isRangInElement(el, range)) {
+        const rangeForCalc = range.cloneRange();
+        if (el.childNodes[0] && el.childNodes[0].childNodes[0]) {
+            rangeForCalc.setStart(el.childNodes[0].childNodes[0], 0);
         } else {
-            preSelectionRange.selectNodeContents(editorElement);
+            rangeForCalc.selectNodeContents(el);
         }
-        preSelectionRange.setEnd(range.startContainer, range.startOffset);
-        position.start = preSelectionRange.toString().length;
+        rangeForCalc.setEnd(range.startContainer, range.startOffset);
+        position.start = rangeForCalc.toString().length;
         position.end = position.start + range.toString().length;
     }
     return position;

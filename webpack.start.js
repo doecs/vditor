@@ -135,15 +135,15 @@ module.exports = {
     contentBase: path.join(__dirname, '.'),
     port: 9000,
     host: '127.0.0.1',
-    before: (app) => {
-      app.get('/dist/js/lute/lute.wasm.br', function (req, res, next) {
-        res.set({
-          'Content-Encoding': 'br',
-          'Content-Type': 'application/wasm',
-        })
-        next()
-      })
-    },
+    // before: (app) => {
+    //   app.get('/dist/js/lute/lute.wasm.br', function (req, res, next) {
+    //     res.set({
+    //       'Content-Encoding': 'br',
+    //       'Content-Type': 'application/wasm',
+    //     })
+    //     next()
+    //   })
+    // },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

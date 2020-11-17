@@ -2,7 +2,8 @@ import {Constants} from "../constants";
 import {disableToolbar, enableToolbar, removeCurrentToolbar, setCurrentToolbar} from "../toolbar/setToolbar";
 import {hasClosestByAttribute, hasClosestByMatchTag} from "../util/hasClosest";
 import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
-import {getEditorRange, selectIsEditor} from "../util/selection";
+import {getEditorRange, isRangInElement} from "../util/selection";
+
 // 根据当前编辑器中的光标位置，设定toolbar中按钮的状态
 export const highlightToolbar = (vditor: IVditor) => {
     clearTimeout(vditor.ir.hlToolbarTimeoutId);
@@ -10,7 +11,7 @@ export const highlightToolbar = (vditor: IVditor) => {
         if (vditor.ir.element.getAttribute("contenteditable") === "false") {
             return;
         }
-        if (!selectIsEditor(vditor.ir.element)) {
+        if (!isRangInElement(vditor.ir.element)) {
             return;
         }
 

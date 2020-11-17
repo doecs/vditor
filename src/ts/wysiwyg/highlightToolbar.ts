@@ -20,7 +20,7 @@ import {
 } from "../util/hasClosest";
 import {hasClosestByHeadings, hasClosestByTag} from "../util/hasClosestByHeadings";
 import {processCodeRender} from "../util/processCode";
-import {getEditorRange, selectIsEditor, setRangeByWbr, setSelectionFocus} from "../util/selection";
+import {getEditorRange, isRangInElement, setRangeByWbr, setSelectionFocus} from "../util/selection";
 import {afterRenderEvent} from "./afterRenderEvent";
 
 export const highlightToolbar = (vditor: IVditor) => {
@@ -29,7 +29,7 @@ export const highlightToolbar = (vditor: IVditor) => {
         if (vditor.wysiwyg.element.getAttribute("contenteditable") === "false") {
             return;
         }
-        if (!selectIsEditor(vditor.wysiwyg.element)) {
+        if (!isRangInElement(vditor.wysiwyg.element)) {
             return;
         }
 

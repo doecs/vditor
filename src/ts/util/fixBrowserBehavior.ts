@@ -20,7 +20,7 @@ import {hasClosestByHeadings} from "./hasClosestByHeadings";
 import {matchHotKey} from "./hotKey";
 import {
     getEditorRange,
-    getSelectPosition,
+    getElSelectedPosition,
     insertHTML,
     setRangeByWbr,
     setSelectionByPosition, setSelectionFocus,
@@ -28,20 +28,23 @@ import {
 import {log} from "../util/log";
 
 // https://github.com/Vanessa219/vditor/issues/361
+// p tag输入时如果是开始位置输入，则先插入占位符
 export const fixCJKPosition = (range: Range, event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === "Tab" || event.key === "Backspace" || event.key.indexOf("Arrow") > -1
+    if (event.key === "Enter" || event.key === "Tab" || event.key === "Backspace" 
+        || event.key.indexOf("Arrow") > -1
         || isCtrl(event) || event.key === "Escape" || event.shiftKey || event.altKey) {
-        return;
+        return; // 当按下键包含：enter, tab, bs, arrow, ctrl, esc, shfit, alt时，不进行该处理
     }
+    // 如果输入position在p中，且在p的开始位置时，先插入占位符（0长度不可见字符）
     const pElement = hasClosestByMatchTag(range.startContainer, "P");
-    if (pElement && getSelectPosition(pElement, range).start === 0) {
-        const zwspNode = document.createTextNode(Constants.ZWSP);
-        range.insertNode(zwspNode);
-        range.setStartAfter(zwspNode);
+    if (pElement && getElSelectedPosition(pElement, range).start === 0) {
+        const zwspNode = document.createTextNode(Constants.ZWSP); // 
+        range.insertNode(zwspNode); // 插入占位符
+        range.setStartAfter(zwspNode);  // 将插入点移到占位符后
     }
 };
 
-// https://github.com/Vanessa219/vditor/issues/381
+// 修复：光标在内联数学公式中无法向下移动。https://github.com/Vanessa219/vditor/issues/381
 export const fixCursorDownInlineMath = (range: Range, key: string) => {
     if (key === "ArrowDown" || key === "ArrowUp") {
         const inlineMathElement = hasClosestByAttribute(range.startContainer, "data-type", "math-inline");
@@ -114,7 +117,7 @@ const goPreviousCell = (cellElement: HTMLElement, range: Range, isSelected = tru
 export const insertAfterBlock = (vditor: IVditor, event: KeyboardEvent, range: Range, element: HTMLElement,
                                  blockElement: HTMLElement) => {
 
-    const position = getSelectPosition(element, range);
+    const position = getElSelectedPosition(element, range);
     let elementContent = element.textContent.trimRight()
     const preRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker--pre");
     if (preRenderElement && preRenderElement.tagName === "PRE") {
@@ -139,12 +142,20 @@ export const insertAfterBlock = (vditor: IVditor, event: KeyboardEvent, range: R
     }
     return false;
 };
-
+/**
+ * ArrowUp + not have '\n' in rest chars | ArrowLeft/Backspace + in first pos of content
+ * @param vditor 
+ * @param event 
+ * @param range 
+ * @param element 
+ * @param blockElement 
+ */
 export const insertBeforeBlock = (vditor: IVditor, event: KeyboardEvent, range: Range, element: HTMLElement,
                                   blockElement: HTMLElement) => {
-    const position = getSelectPosition(element, range);
+    const position = getElSelectedPosition(element, range);
     if ((event.key === "ArrowUp" && element.textContent.substr(position.start).indexOf("\n") === -1) ||
-        ((event.key === "ArrowLeft" || event.key === "Backspace") && position.start === 0)) {
+        ((event.key === "ArrowLeft" || event.key === "Backspace") && position.start === 0)
+        ) {
         const previousElement = blockElement.previousElementSibling;
         // table || code
         if (!previousElement ||
@@ -350,7 +361,7 @@ export const setTableAlign = (tableElement: HTMLTableElement, type: string) => {
     }
 };
 // 是否为分隔线（***、---、___）
-export const isHrMD = (text: string) => {
+export const isHrMD = (vditor: IVditor, text: string) => {
     // - _ *
     const marker = text.trimRight().split("\n").pop();
     if (marker === "") {
@@ -362,12 +373,11 @@ export const isHrMD = (text: string) => {
         if (marker.replace(/ /g, "").length > 2) {
             if (marker.indexOf("-") > -1 && marker.trimLeft().indexOf(" ") === -1
                 && text.trimRight().split("\n").length > 1) {
-                // 满足 heading
-                return false;
+                return false; // 满足 heading
             }
-            if (marker.indexOf("    ") === 0 || marker.indexOf("\t") === 0) {
-                // 代码块
-                return false;
+            if (marker.indexOf("    ") === 0 || marker.indexOf("\t") === 0
+                  || text.indexOf(vditor.options.tab) === 0) {
+                return false; // 代码块
             }
             return true;
         }
@@ -375,21 +385,22 @@ export const isHrMD = (text: string) => {
     }
     return false;
 };
-// 是否为多个或单个等号或减号
-export const isHeadingMD = (text: string) => {
-    // - =
+// 是否为Setext类型表示H1和H2
+// 文本 + '\n' + ==(一个或多个的等号) 表示h1
+// 文本 + '\n' + --(一个或多个的减号) 表示h2
+export const isSetextHeadingMD = (vditor: IVditor, text: string) => {
     const textArray = text.trimRight().split("\n");
     text = textArray.pop(); // 有换行，则以换行分割，取最后一个字符串
 
-    if (text.indexOf("    ") === 0 || text.indexOf("\t") === 0) {
-        return false;
+    if (text.indexOf("    ") === 0 || text.indexOf("\t") === 0 
+          || text.indexOf(vditor.options.tab) === 0) {
+        return false; // 代码块
     }
 
     text = text.trimLeft();
     if (text === "" || textArray.length === 0) {
         return false;
     }
-    
     if (text.replace(/-/g, "") === ""
         || text.replace(/=/g, "") === "") {
         return true;
@@ -431,6 +442,7 @@ export const execAfterRender = (vditor: IVditor) => {
     }
 };
 
+// Enter、Space、Tab键在li标签内的处理。li标签格式的修复
 export const fixList = (range: Range, vditor: IVditor, pElement: HTMLElement | false, event: KeyboardEvent) => {
     const startContainer = range.startContainer;
     const liElement = hasClosestByMatchTag(startContainer, "LI");
@@ -451,7 +463,7 @@ export const fixList = (range: Range, vditor: IVditor, pElement: HTMLElement | f
 
         if (!isCtrl(event) && !event.shiftKey && !event.altKey && event.key === "Backspace" &&
             !liElement.previousElementSibling && range.toString() === "" &&
-            getSelectPosition(liElement, range).start === 0) {
+            getElSelectedPosition(liElement, range).start === 0) {
             // 光标位于点和第一个字符中间时，无法删除 li 元素
             if (liElement.nextElementSibling) {
                 liElement.parentElement.insertAdjacentHTML("beforebegin",
@@ -515,11 +527,17 @@ export const fixTab = (vditor: IVditor, range: Range, event: KeyboardEvent) => {
         return true;
     }
 };
-
+// Enter键、Space键在P标签内的处理。
+// return false则继续keydown剩余处理，true则继续keydown剩余处理
 export const fixMarkdown = (event: KeyboardEvent, vditor: IVditor, pElement: HTMLElement | false, range: Range) => {
     if (!pElement) {
         return;
     }
+    // Enter键处理。p标签内Enter键输入首尾为|符，且文本长度大于3，则自动生成table block
+    // 如：|1|2| -> 加工成下面md格式字符串后，用lute.SpinVditorDOM()转为ir渲染DOM
+    // |1|2|
+    // |---|---|
+    // |<wbr>
     if (!isCtrl(event) && !event.altKey && event.key === "Enter") {
         const pText = String.raw`${pElement.textContent}`.replace(/\\\|/g, "").trim();
         const pTextList = pText.split("|");
@@ -537,8 +555,8 @@ export const fixMarkdown = (event: KeyboardEvent, vditor: IVditor, pElement: HTM
         }
 
         // hr 渲染
-        if (isHrMD(pElement.innerHTML)) {
-            // 软换行后 hr 前有内容
+        if (isHrMD(vditor, pElement.innerHTML)) {
+            // 换行符后有 hr MD符号，换行符前有内容，则将换行符前的内容放到P标签中，在P标签后生成hr block
             let pInnerHTML = "";
             const innerHTMLList = pElement.innerHTML.trimRight().split("\n");
             if (innerHTMLList.length > 1) {
@@ -552,13 +570,16 @@ export const fixMarkdown = (event: KeyboardEvent, vditor: IVditor, pElement: HTM
             setRangeByWbr(vditor[vditor.currentMode].element, range);
             execAfterRender(vditor);
             scrollCenter(vditor);
-            event.preventDefault();
+            event.preventDefault(); // 阻止浏览器默认行为
             return true;
         }
 
-        if (isHeadingMD(pElement.innerHTML)) {
+        // 是否为setext类型的md表示h1和h2
+        if (isSetextHeadingMD(vditor, pElement.innerHTML)) {
             // heading 渲染
-            pElement.outerHTML = vditor.lute.SpinVditorDOM(pElement.innerHTML + '<p data-block="0"><wbr>\n</p>');
+            let setextDom = vditor.lute.SpinVditorDOM(pElement.innerHTML + '<p data-block="0"><wbr>\n</p>');
+            // [bug]lute.SpinVditorDOM()转换得到的不是heading1或2的渲染结果，而是table
+            pElement.outerHTML = setextDom
             setRangeByWbr(vditor[vditor.currentMode].element, range);
             execAfterRender(vditor);
             scrollCenter(vditor);
@@ -567,13 +588,15 @@ export const fixMarkdown = (event: KeyboardEvent, vditor: IVditor, pElement: HTM
         }
     }
 
-    // 软换行会被切割 https://github.com/Vanessa219/vditor/issues/220
+    // BackSpace键处理。P标签前有兄弟元素，BackSpace键，且P标签内存在换行符，且range的start位于位于P标签的开始位置
+    // 应该的效果：将当前P中的内容移到上一个相邻元素的最后一个子元素中
+    // 换行符会被分隔为两个P标签 https://github.com/Vanessa219/vditor/issues/220
     if (pElement.previousElementSibling && event.key === "Backspace" && !isCtrl(event) && !event.altKey &&
-        !event.shiftKey && pElement.textContent.trimRight().split("\n").length > 1 &&
-        getSelectPosition(pElement, range).start === 0) {
+          !event.shiftKey && pElement.textContent.trimRight().split("\n").length > 1 &&
+          getElSelectedPosition(pElement, range).start === 0) {
         const lastElement = getLastNode(pElement.previousElementSibling) as HTMLElement;
         if (!lastElement.textContent.endsWith("\n")) {
-            lastElement.textContent = lastElement.textContent + "\n";
+            lastElement.textContent = lastElement.textContent + "\n"; // 该回车符，进入input处理时将被Backspace删除
         }
         lastElement.parentElement.insertAdjacentHTML("beforeend", `<wbr>${pElement.innerHTML}`);
         pElement.remove();
@@ -878,7 +901,7 @@ export const fixCodeBlock = (vditor: IVditor, event: KeyboardEvent, codeRenderEl
           execAfterRender(vditor);
         } else {
           // select multi char in code block
-          let pos = getSelectPosition(codeRenderElement, range)
+          let pos = getElSelectedPosition(codeRenderElement, range)
           let s = range.toString()
           if (!isCtrl(event) && !event.shiftKey && !event.altKey) {
             // tab
@@ -915,7 +938,7 @@ export const fixCodeBlock = (vditor: IVditor, event: KeyboardEvent, codeRenderEl
 
     // Backspace: 光标位于第零个字符，仅删除代码块标签
     if (event.key === "Backspace" && !isCtrl(event) && !event.shiftKey && !event.altKey) {
-        const codePosition = getSelectPosition(codeRenderElement, range);
+        const codePosition = getElSelectedPosition(codeRenderElement, range);
         if ((codePosition.start === 0 ||
             (codePosition.start === 1 && codeRenderElement.innerText === "\n")) // 空代码块，光标在 \n 后
             && range.toString() === "") {
@@ -944,13 +967,13 @@ export const fixCodeBlock = (vditor: IVditor, event: KeyboardEvent, codeRenderEl
     }
     return false;
 };
-
+// Enter、Space键及wysiwyg模式下blockquote快捷键处理。修复blockquote标签格式
 export const fixBlockquote = (vditor: IVditor, range: Range, event: KeyboardEvent, pElement: HTMLElement | false) => {
     const startContainer = range.startContainer;
     const blockquoteElement = hasClosestByMatchTag(startContainer, "BLOCKQUOTE");
     if (blockquoteElement && range.toString() === "") {
         if (event.key === "Backspace" && !isCtrl(event) && !event.shiftKey && !event.altKey &&
-            getSelectPosition(blockquoteElement, range).start === 0) {
+            getElSelectedPosition(blockquoteElement, range).start === 0) {
             // Backspace: 光标位于引用中的第零个字符，仅删除引用标签
             range.insertNode(document.createElement("wbr"));
             blockquoteElement.outerHTML = blockquoteElement.innerHTML;
@@ -969,7 +992,7 @@ export const fixBlockquote = (vditor: IVditor, range: Range, event: KeyboardEven
                 isEmpty = true;
                 pElement.remove();
             } else if (pElement.innerHTML.endsWith("\n\n") &&
-                getSelectPosition(pElement, range).start === pElement.textContent.length - 1) {
+                getElSelectedPosition(pElement, range).start === pElement.textContent.length - 1) {
                 // 软换行
                 pElement.innerHTML = pElement.innerHTML.substr(0, pElement.innerHTML.length - 2);
                 isEmpty = true;
@@ -1125,7 +1148,7 @@ export const fixDelete = (vditor: IVditor, range: Range, event: KeyboardEvent, p
 
     if (pElement) {
         const previousElement = pElement.previousElementSibling;
-        if (previousElement && getSelectPosition(pElement, range).start === 0 &&
+        if (previousElement && getElSelectedPosition(pElement, range).start === 0 &&
             ((isFirefox() && previousElement.tagName === "HR") || previousElement.tagName === "TABLE")) {
             if (previousElement.tagName === "TABLE") {
                 // table 后删除 https://github.com/Vanessa219/vditor/issues/243
@@ -1145,7 +1168,7 @@ export const fixDelete = (vditor: IVditor, range: Range, event: KeyboardEvent, p
     }
     return false;
 };
-
+// firefox时，输入位置的容器是hr时，将输入点移到hr前的位置
 export const fixHR = (range: Range) => {
     if (isFirefox() && range.startContainer.nodeType !== 3 &&
         (range.startContainer as HTMLElement).tagName === "HR") {
@@ -1244,7 +1267,7 @@ export const paste = (vditor: IVditor, event: ClipboardEvent & { target: HTMLEle
     const codeElement = hasClosestByMatchTag(event.target, "CODE");
     if (codeElement) {
         // 粘贴在代码位置
-        const position = getSelectPosition(event.target);
+        const position = getElSelectedPosition(event.target);
         codeElement.textContent = codeElement.textContent.substring(0, position.start)
             + textPlain + codeElement.textContent.substring(position.end);
         setSelectionByPosition(position.start + textPlain.length, position.start + textPlain.length,

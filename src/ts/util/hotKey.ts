@@ -8,8 +8,10 @@ export const matchHotKey = (hotKey: string, event: KeyboardEvent) => {
     if (hasShift && key === "-" && (isFirefox() || !/Mac/.test(navigator.platform))) {
         key = "_";
     }
-    if (isCtrl(event) && event.key.toLowerCase() === key.toLowerCase() && !event.altKey
-        && ((!hasShift && !event.shiftKey) || (hasShift && event.shiftKey))) {
+    if (
+      isCtrl(event) && event.key.toLowerCase() === key.toLowerCase() && !event.altKey
+        && ((!hasShift && !event.shiftKey) || (hasShift && event.shiftKey))
+        ) {
         return true;
     }
     return false;

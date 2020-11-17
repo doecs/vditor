@@ -1,3 +1,5 @@
+require('../../js/lute/lute.js');
+
 export const setLute = (options: ILuteOptions) => {
     const lute: ILute = Lute.New();
     lute.PutEmojis(options.emojis);

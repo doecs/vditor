@@ -1,5 +1,5 @@
 // NOTE: 减少 method.ts 打包，故从 hasClosest.ts 中拆分
-// 向上查找是否指定的tag（直到class包含：vditor-reset）
+// 向父元素查找是否存在最近的指定tag（直到class包含：vditor-reset）
 export const hasClosestByTag = (element: Node, nodeName: string) => {
     if (!element) {
         return false;
@@ -19,7 +19,7 @@ export const hasClosestByTag = (element: Node, nodeName: string) => {
     return isClosest && e;
 };
 
-// 向上查找是否指定的Heading标签（H1~H6）
+// 向父元素查找是否存在最近的Heading标签（H1~H6）
 export const hasClosestByHeadings = (element: Node) => {
     const headingElement = hasClosestByTag(element, "H");
     if (headingElement && headingElement.tagName.length === 2 && headingElement.tagName !== "HR") {

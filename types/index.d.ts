@@ -2,6 +2,8 @@ declare module "*.svg";
 
 declare module "*.png";
 
+declare module '*.js'
+
 declare const Lute: ILute;
 
 interface ILuteNode {

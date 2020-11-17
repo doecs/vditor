@@ -46,7 +46,7 @@ SOFTWARE.
 const rimraf = require('rimraf')
 
 rimraf.sync('./dist', {},() => {
-  console.log('rm dist')
+  console.log('rm dist')  // 删除dist目录中的旧文件
 })
 
 module.exports = [
@@ -89,16 +89,16 @@ module.exports = [
     },
     optimization: {
       minimizer: [
-        new OptimizeCSSAssetsPlugin({}),
+        new OptimizeCSSAssetsPlugin({}),  // 用于优化或者压缩CSS资源
       ],
     },
     plugins: [
       banner,
       new MiniCssExtractPlugin({
-        filename: '[name].css',
+        filename: '[name].css', // 将CSS提取为独立的文件，对每个包含css的js文件都会创建一个CSS文件，支持按需加载css
       }),
       new WebpackOnBuildPlugin(() => {
-        fs.unlinkSync('./dist/index.js')
+        fs.unlinkSync('./dist/index.js')  // after build delete file
       }),
       new CopyPlugin([
         {from: 'src/css', to: 'css'},
@@ -109,18 +109,18 @@ module.exports = [
     ],
   }, {
     mode: 'production',
+    entry: {
+      'index.min': './src/index.ts',  // 'index.min'为[name]
+      'method.min': './src/method.ts'
+    },
     output: {
-      filename: '[name].js',
-      path: path.resolve(__dirname, 'dist'),
+      filename: '[name].js',  // [name]为'index.min'和'method.min'
+      path: path.resolve(__dirname, 'dist'),  // 输出目录为dist
       // chunkFilename: '[name].bundle.js',
       // publicPath: `${pkg.cdn}/vditor@${pkg.version}/dist/`,
       libraryTarget: 'umd',
       library: 'Vditor',
       libraryExport: 'default',
-    },
-    entry: {
-      'index.min': './src/index.ts',
-      'method.min': './src/method.ts',
     },
     resolve: {
       extensions: ['.js', '.ts', '.svg', 'png'],
@@ -197,4 +197,5 @@ module.exports = [
     //     },
     //   },
     // },
-  }]
+  }
+]

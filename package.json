@@ -15,6 +15,7 @@
     "src/assets/*"
   ],
   "dependencies": {
+    "@types/node": "^14.14.7",
     "diff-match-patch": "^1.0.4"
   },
   "types": "dist/index.d.ts",

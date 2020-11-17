@@ -1,12 +1,12 @@
 import {getMarkdown} from "../markdown/getMarkdown";
-import {getEditorRange, getSelectPosition} from "../util/selection";
+import {getEditorRange, getElSelectedPosition} from "../util/selection";
 import {formatRender} from "./formatRender";
 
 export const insertText = (vditor: IVditor, prefix: string, suffix: string, replace: boolean = false,
                            toggle: boolean = false) => {
     const range = getEditorRange(vditor.sv.element);
 
-    const position = getSelectPosition(vditor.sv.element, range);
+    const position = getElSelectedPosition(vditor.sv.element, range);
     const content = getMarkdown(vditor);
 
     // select none || select something and need replace

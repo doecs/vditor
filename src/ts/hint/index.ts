@@ -6,7 +6,7 @@ import {code160to32} from "../util/code160to32";
 import {execAfterRender} from "../util/fixBrowserBehavior";
 import {hasClosestByAttribute, hasClosestByClassName} from "../util/hasClosest";
 import {processCodeRender} from "../util/processCode";
-import {getCursorPosition, getSelectPosition, insertHTML, setSelectionFocus} from "../util/selection";
+import {getCursorPosition, getElSelectedPosition, insertHTML, setSelectionFocus} from "../util/selection";
 
 export class Hint {
     public timeId: number;
@@ -24,7 +24,7 @@ export class Hint {
         if (!window.getSelection().focusNode) {
             return;
         }
-        const position = getSelectPosition(vditor[vditor.currentMode].element);
+        const position = getElSelectedPosition(vditor[vditor.currentMode].element);
         let currentLineValue: string;
         if (vditor.currentMode !== "sv") {
             const range = getSelection().getRangeAt(0);
@@ -187,7 +187,7 @@ ${i === 0 ? "class='vditor-hint--current'" : ""}> ${html}</button>`;
             }
             execAfterRender(vditor);
         } else {
-            const position = getSelectPosition(vditor.sv.element, range);
+            const position = getElSelectedPosition(vditor.sv.element, range);
             const text = getMarkdown(vditor);
             const preText = text.substring(0, text.substring(0, position.start).lastIndexOf(splitChar));
             formatRender(vditor, preText + value + text.substring(position.start),

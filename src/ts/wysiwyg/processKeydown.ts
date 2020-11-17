@@ -19,7 +19,7 @@ import {
 } from "../util/hasClosest";
 import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
 import {matchHotKey} from "../util/hotKey";
-import {getEditorRange, getSelectPosition, setSelectionFocus} from "../util/selection";
+import {getEditorRange, getElSelectedPosition, setSelectionFocus} from "../util/selection";
 import {afterRenderEvent} from "./afterRenderEvent";
 import {nextIsCode} from "./inlineTag";
 import {removeHeading, setHeading} from "./setHeading";
@@ -256,7 +256,7 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
             if (blockElement.previousElementSibling
                 && blockElement.previousElementSibling.classList.contains("vditor-wysiwyg__block")
                 && blockElement.previousElementSibling.getAttribute("data-block") === "0") {
-                const rangeStart = getSelectPosition(blockElement, range).start;
+                const rangeStart = getElSelectedPosition(blockElement, range).start;
                 if (rangeStart === 0 || (rangeStart === 1 && blockElement.innerText.startsWith(Constants.ZWSP))) {
                     // 当前块删除后光标落于代码渲染块上，当前块会被删除，因此需要阻止事件，不能和 keyup 中的代码块处理合并
                     showCode(blockElement.previousElementSibling.lastElementChild as HTMLElement, vditor, false);

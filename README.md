@@ -491,10 +491,28 @@ Vditor uses the [MIT](https://opensource.org/licenses/MIT) open source license.
 * [abcjs](https://github.com/paulrosen/abcjs): JavaScript library for rendering standard music notation in a browser
 * [IntelliJ IDEA](https://www.jetbrains.com/?from=Vditor): Family of capable and ergonomic development environments
 
-# Release Note
+## Build
+- lute修改后，需要重新打包。将生成的最新lute.min.js(或lute.js)放入src/js/lute目录；运行yarn run build
+
+## Release Note
+2020/11/17
+- 更新修改后的lute
+- 修改lute的引用方式（原：通过src\ts\util\addScript.ts来动态cdn引用lute）。现：src\ts\markdown\setLute.ts中require lute.min.js(lute.js)）。
+需要安装@types/node让ts支持require语法，否则编译无法通过。并修改src\index.ts和src\ts\markdown\previewRender.ts中通过addScript添加lute的方式
+并在tsconfig.json中的"types"添加node类型。如："types": ["node", "./types"]
+
 2020/06/09 modified base on 3.2.9
 - [bug fixed] 代码块中enter换行后，代码预览无法及时被更新的问题。对策：修改fixBrowserBehavior.ts中fixCodeBlock函数。在enter按钮后，设置定位用wbr标签，并使用lute进行转换并重设block元素html（新增util/processCode.ts中新增：syncUpdateCodePreview函数处理codePreview的更新）
 - [bug fixed] 代码块中部分位置spaceback和delete键按下后，代码预览中没有同步。对策：修改ir/input.ts的input函数中结尾空格的处理，当在代码块中操作时不做return.
 - [bug fixed] 代码块中，如果光标后是换行或空格时，按右键和下键，会定位到代码块后一个块中，而不是代码块中的下一个位置。对策：修改fixBrowserBehavior.ts（被processKeydown.ts调用）中的insertAfterBlock函数添加如果是代码块的情况，则不做trimRight()的处理（不去掉结尾的空格和换行）。该对策还是有问题，但目前不对策（因为目前plznote中preview设置为隐藏）如果没有把代码块的preview隐藏，有时候光标会进入preview。
 - [func ok] 代码块中，选中文字，按tab键或shift+tab键无法对整块代码进行缩进或反缩进。对策：增加fixBrowserBehavior.ts（被processKeydown.ts调用）中fixCodeBlock添加对选中字符shift+tab及tab的处理
 - [bug fixed] ir模式下，代码块中按tab键或shift+tab键按下后，代码预览中没有同步。
+- [bug fixed] vditor中文档是否被修改的判断延迟过长。原因：ir和swing模式下options.input回调方法执行时使用了timeout延迟执行。对策：缩小input事件延迟800 -> 10（ir/process.ts, wysiwyg/afterRenderEvent.ts）
+- [bug fixed] H标签光标放在最前回车后，新建行前面仍有H的标记（应该是生成普通段落）
+
+## git
+``` bash
+git add .
+git commit -m 'xx'
+git push -u origin master
+```

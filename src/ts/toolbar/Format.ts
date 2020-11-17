@@ -1,7 +1,7 @@
 import {getMarkdown} from "../markdown/getMarkdown";
 import {formatRender} from "../sv/formatRender";
 import {getEventName} from "../util/compatibility";
-import {getSelectPosition} from "../util/selection";
+import {getElSelectedPosition} from "../util/selection";
 import {MenuItem} from "./MenuItem";
 
 export class Format extends MenuItem {
@@ -10,7 +10,7 @@ export class Format extends MenuItem {
         this.element.children[0].addEventListener(getEventName(), (event) => {
             event.preventDefault();
             formatRender(vditor,  vditor.lute.FormatMd( getMarkdown(vditor)),
-                getSelectPosition(vditor.sv.element, getSelection().getRangeAt(0)));
+                getElSelectedPosition(vditor.sv.element, getSelection().getRangeAt(0)));
         });
     }
 }

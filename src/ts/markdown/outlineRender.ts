@@ -2,7 +2,7 @@ import {hasClosestByHeadings} from "../util/hasClosestByHeadings";
 
 /**
  * 大纲渲染
- * @param contentElement 要渲染的内容元素
+ * @param contentElement 要渲染的内容元素（编辑器或预览）
  * @param targetElement 大纲元素
  * @param vditor 
  */
@@ -30,11 +30,11 @@ export const outlineRender = (contentElement: HTMLElement, targetElement: Elemen
         item.addEventListener("click", (event: Event & { target: HTMLElement }) => {
             const id = item.getAttribute("data-id");
             if (vditor) {
-              console.log('vditor')
+                console.log('vditor')
                 if (vditor.options.height === "auto") {
-                  console.log('vditor height = auto')
-                  console.log('document.getElementById(id).offsetTop:' + document.getElementById(id).offsetTop)
-                  console.log('vditor.element.offsetTop:' + vditor.element.offsetTop)
+                    console.log('vditor height = auto')
+                    console.log('document.getElementById(id).offsetTop:' + document.getElementById(id).offsetTop)
+                    console.log('vditor.element.offsetTop:' + vditor.element.offsetTop)
                     let windowScrollY = document.getElementById(id).offsetTop + vditor.element.offsetTop;
                     if (!vditor.options.toolbarConfig.pin) {                 
                       console.log('toolbarConfig.pin == not')        
@@ -44,18 +44,22 @@ export const outlineRender = (contentElement: HTMLElement, targetElement: Elemen
                     console.log('windowScrollY:' + windowScrollY)  
                     window.scrollTo(window.scrollX, windowScrollY);
                 } else {
-                  console.log('vditor height != auto')
-                  console.log('vditor.element.offsetTop:' + vditor.element.offsetTop)
-                  console.log('window.scrollY:' + window.scrollY)
+                    console.log('vditor height != auto')
+                    console.log('vditor.element.offsetTop:' + vditor.element.offsetTop)
+                    console.log('window.scrollY:' + window.scrollY)
+                    console.log('contentElement.scrollTop:' + contentElement.scrollTop)
+                    console.log('contentElement.clientHeight:' + contentElement.clientHeight)
                     if (vditor.element.offsetTop < window.scrollY) {
-                        window.scrollTo(window.scrollX, vditor.element.offsetTop);
+                        window.scrollTo(window.scrollX, vditor.element.offsetTop);  // 当window滚动控制编辑内容滚动时
                     }
                     if (vditor.preview.element.contains(contentElement)) {
+                        // 在预览窗口中
                         console.log('vditor.preview.element.contains(contentElement)')
                         contentElement.parentElement.scrollTop = document.getElementById(id).offsetTop;
                     } else {
-                        contentElement.scrollTop = document.getElementById(id).offsetTop;
+                        contentElement.scrollTop = document.getElementById(id).offsetTop;  
                     }
+                    // console.log('document.getElementById(id).scrollTop:' + document.getElementById(id).scrollTop)
                     console.log('document.getElementById(id).offsetTop:' + document.getElementById(id).offsetTop)
                 }
             } else {

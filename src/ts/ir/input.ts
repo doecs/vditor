@@ -1,4 +1,4 @@
-import {isHeadingMD, isHrMD, renderToc} from "../util/fixBrowserBehavior";
+import {isSetextHeadingMD, isHrMD, renderToc} from "../util/fixBrowserBehavior";
 import {
     getTopList,
     hasClosestBlock, hasClosestByAttribute,
@@ -7,25 +7,25 @@ import {
 import {hasClosestByTag} from "../util/hasClosestByHeadings";
 import {log} from "../util/log";
 import {processCodeRender} from "../util/processCode";
-import {getSelectPosition, setRangeByWbr} from "../util/selection";
+import {getElSelectedPosition, setRangeByWbr} from "../util/selection";
 import {processAfterRender} from "./process";
 
 export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
     let blockElement = hasClosestBlock(range.startContainer);
     
-    // 前后可以输入空格
+    // 聚焦在block元素 && 不忽略空格
     if (blockElement && !ignoreSpace) {
-        if (isHrMD(blockElement.innerHTML) || isHeadingMD(blockElement.innerHTML)) {
-            return; //如果是分隔符则不处理
+        // 分隔符 || Setext Heading 不处理
+        if (isHrMD(vditor, blockElement.innerHTML) || isSetextHeadingMD(vditor, blockElement.innerHTML)) {
+            return; 
         }
   
-        // 前后空格处理
-        const startOffset = getSelectPosition(blockElement, range).start;
-        console.log('startOffset:' + startOffset)
-        // 开始可以输入空格
+        // 选区的开始位置距离元素起点的offset
+        const startOffset = getElSelectedPosition(blockElement, range).start;
+
+        // 检查插入点前面到距离最近的\n符之间的字符是否存在\t或空格
         let startSpace = true;
         for (let i = startOffset - 1;
-            // 软换行后有空格
              i > blockElement.textContent.substr(0, startOffset).lastIndexOf("\n");
              i--) {
             if (blockElement.textContent.charAt(i) !== " " &&
@@ -38,7 +38,7 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
         if (startOffset === 0) {
             startSpace = false;
         }
-        // 结尾可以输入空格
+        // 检查插入点后到block最后位置之间的字符是否存在\t或空格
         let endSpace = true;
         for (let i = startOffset - 1; i < blockElement.textContent.length; i++) {
             if (blockElement.textContent.charAt(i) !== " " && blockElement.textContent.charAt(i) !== "\n") {
@@ -46,29 +46,36 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
                 break;
             }
         }
+        // 如果前面有tab|space（非脑图类型）或 后面有tab|space
         if ((startSpace && !blockElement.querySelector(".language-mindmap")) || endSpace) {
+            // 后面有tab|space
             if (endSpace) {
                 const markerElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker");
                 if (markerElement) {
+                    // 插入点元素属于marker元素子元素（修改marker）
                     // inline marker space https://github.com/Vanessa219/vditor/issues/239
                 } else {
+                    // 非修改marker
                     const previousNode = range.startContainer.previousSibling as HTMLElement;
+                    // 且插入点前面的兄弟node不是Text Node，并且前面的兄弟node属于expand状态，则去掉expand状态
                     if (previousNode && previousNode.nodeType !== 3 && previousNode.classList.contains("vditor-ir__node--expand")) {
                         // FireFox https://github.com/Vanessa219/vditor/issues/239
                         previousNode.classList.remove("vditor-ir__node--expand");
                     }
                 }
             } else {
-                // startSpace and !endSpace  
+                // 前面有tab|space（非脑图类型）后面没有tab | space
                 const preRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__marker--pre");
                 if (preRenderElement && preRenderElement.tagName === "PRE") {
-                  // bug fixed 如果是在代码块，则需要进行lute渲染代码块否则. jay
+                  // 且在代码块的pre区
+                  // bug fixed 如果是在代码块，则需要继续执行到lute渲染代码块，否则代码没法同步反映到pre区中. jay
                 } else {
                   return;
                 }                
             }
         }
     }
+    // 去除文中所有expand的状态（重设）
     vditor.ir.element.querySelectorAll(".vditor-ir__node--expand").forEach((item) => {
         item.classList.remove("vditor-ir__node--expand");
     });
@@ -77,10 +84,12 @@ export const input = (vditor: IVditor, range: Range, ignoreSpace = false) => {
         blockElement = vditor.ir.element;
     }
     // 用<wbr>来代表光标的位置，使得通过lute重新渲染后的结果也能重现光标位置。jay
+    // 如果当前block块没有光标位置标识<wbr>
     if (!blockElement.querySelector("wbr")) {
         const previewRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__preview");
+        // 且在代码的pre块
         if (previewRenderElement) {
-            // 光标如果落在预览区域中，则重置到代码区域
+            // 插入点在pre块中，则自动设置到代码的编辑块的最后位置
             if (previewRenderElement.previousElementSibling.firstElementChild) {
                 range.selectNodeContents(previewRenderElement.previousElementSibling.firstElementChild);
             } else {

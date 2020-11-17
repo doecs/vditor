@@ -45,21 +45,17 @@
     </style>
 </head>
 <body>
-  <p><button onClick="window.onTestClick(event)">test</button></p>
-  <p><button onClick="window.onTest2Click(event)">test2</button></p>
-<h2>
+  <div id="div1">
+    <button onClick="window.onTestClick(event)">test</button>
+    <button onClick="window.onTest2Click(event)">test2</button>
     <a href="https://vditor.b3log.org" target="_blank">官网</a> |
     <a href="/render.html">Render</a> |
     <button onclick="window.vditor.setTheme('dark', 'dark',  'native');document.querySelector('body').style.backgroundColor='#2f363d'">Dark Mode</button>
     <button onclick="window.vditor.setTheme('light', 'light', 'github');document.querySelector('body').style.backgroundColor=''">Light Mode</button>
-</h2>
-<div id="vditor">
-<h1>Vditor</h1>
-<ul>
-<li>foo</li>
-<li>bar</li>
-</ul>
-</div>
+    <textarea id="show-info" style="width: 100%; height: 30px; overflow-y: auto;"></textarea>
+  </div>
+  <div id="vditor">
+  <h1>Vditor</h1>
 <script>
   
 window.onTestClick = function(e) {
@@ -70,23 +66,43 @@ window.onTestClick = function(e) {
   // } else {
   //   window.vditor.setEditMode('ir', e)
   // }
-  window.vditor.setValue(`\`\`\`js
-INIT_NEW_TAG (state) {
-    state.currentTag = {
-      owner_id: this.state.User.currentUser.id,
-    }
-}
-\`\`\``)
+//   window.vditor.setValue(`\`\`\`js
+// INIT_NEW_TAG (state) {
+//     state.currentTag = {
+//       owner_id: this.state.User.currentUser.id,
+//     }
+// }
+// \`\`\``)
+
+  let md = window.vditor.html2md(`<p data-block="0">a​</p><p data-block="0">&#8203;​</p><p data-block="0">&#8203;​</p><p data-block="0">b​</p>`)
+  console.log(md)
+  document.getElementById('show-info').value = md
 }
 window.onTest2Click = function(e) {
-  window.vditor.setTheme('dark', 'dark',  'native');
-  window.vditor.disabled()
+  // window.vditor.setTheme('dark', 'dark',  'native');
+  // window.vditor.disabled()
+  let md = window.vditor.md2html(``)
+  console.log(md)
+  document.getElementById('show-info').value = md
 }
 
 window.addEventListener('input', function(e) {
   console.log('win input')
 })
 
+window.addEventListener('keyup', function(e) {
+  let currKey = e.keyCode || e.which || e.charCode;
+      
+  if(currKey == 191 && (e.ctrlKey || e.metaKey)){ 
+    if(window.vditor.getCurrentMode() === 'ir'){
+      window.vditor.setEditMode("sv", e);
+      window.vditor.setPreviewMode('editor')
+    } else {
+      window.vditor.setEditMode("ir", e);
+    }
+  }
+
+})
 </script>
 </body>
 </html>

@@ -38,5 +38,5 @@ export const afterRenderEvent = (vditor: IVditor, options = {
         if (options.enableAddUndoStack) {
             vditor.wysiwygUndo.addToUndoStack(vditor);
         }
-    }, 800);
+    }, 10);  // bug fix。缩小input事件延迟800 -> 10
 };

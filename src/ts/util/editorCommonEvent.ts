@@ -3,12 +3,12 @@ import {processKeydown as irProcessKeydown} from "../ir/processKeydown";
 import {getMarkdown} from "../markdown/getMarkdown";
 import {getSelectText} from "../sv/getSelectText";
 import {insertText} from "../sv/insertText";
-import {processKeydown as mdProcessKeydown} from "../sv/processKeydown";
+import {processKeydown as svProcessKeydown} from "../sv/processKeydown";
 import {setEditMode} from "../toolbar/EditMode";
 import {hidePanel} from "../toolbar/setToolbar";
 import {getCursorPosition} from "../util/selection";
 import {afterRenderEvent} from "../wysiwyg/afterRenderEvent";
-import {processKeydown} from "../wysiwyg/processKeydown";
+import {processKeydown as wysProcessKeydown} from "../wysiwyg/processKeydown";
 import {removeHeading, setHeading} from "../wysiwyg/setHeading";
 import {getEventName, isCtrl} from "./compatibility";
 import {hasClosestByMatchTag} from "./hasClosest";
@@ -46,6 +46,7 @@ export const scrollCenter = (vditor: IVditor) => {
     }
 };
 
+// keydown Event handler
 export const hotkeyEvent = (vditor: IVditor, editorElement: HTMLElement) => {
     editorElement.addEventListener("keydown", (event: KeyboardEvent & { target: HTMLElement }) => {
         console.log('keydown')
@@ -54,20 +55,22 @@ export const hotkeyEvent = (vditor: IVditor, editorElement: HTMLElement) => {
             return;
         }
 
+        console.log('vditor.currentMode: ', vditor.currentMode)
         if (vditor.currentMode === "sv") {
-            if (mdProcessKeydown(vditor, event)) {
+            if (svProcessKeydown(vditor, event)) {
                 return;
             }
         } else if (vditor.currentMode === "wysiwyg") {
-            if (processKeydown(vditor, event)) {
+            if (wysProcessKeydown(vditor, event)) {
                 return;
             }
         } else if (vditor.currentMode === "ir") {
             if (irProcessKeydown(vditor, event)) {
                 return;
             }
+            console.log('irProcessKeydown is not handle')
         }
-
+        // ctrl + Enter | ⌘-Enter
         if (vditor.options.ctrlEnter && matchHotKey("⌘-Enter", event)) {
             vditor.options.ctrlEnter(getMarkdown(vditor));
             event.preventDefault();
@@ -141,7 +144,7 @@ export const hotkeyEvent = (vditor: IVditor, editorElement: HTMLElement) => {
             return true;
         }
 
-        // toggle edit mode
+        // 快捷键（ctrl+alt+7/8/9）切换三种（wysiwyg、sv、ir）编辑模式
         if (isCtrl(event) && event.altKey && !event.shiftKey && /^Digit[7-9]$/.test(event.code)) {
             if (event.code === "Digit7") {
                 setEditMode(vditor, "wysiwyg", event);
@@ -178,6 +181,7 @@ export const hotkeyEvent = (vditor: IVditor, editorElement: HTMLElement) => {
                 return true;
             }
         });
+        console.log('hotkeyEvent is not handle')
     });
 };
 

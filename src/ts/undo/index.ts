@@ -4,7 +4,7 @@ import {formatRender} from "../sv/formatRender";
 import {disableToolbar} from "../toolbar/setToolbar";
 import {enableToolbar} from "../toolbar/setToolbar";
 import {scrollCenter} from "../util/editorCommonEvent";
-import {getSelectPosition} from "../util/selection";
+import {getElSelectedPosition} from "../util/selection";
 
 class Undo {
     private undoStack: Array<{ patchList: patch_obj[], end: number }>;
@@ -40,7 +40,7 @@ class Undo {
 
     public recordFirstPosition(vditor: IVditor) {
         if (this.undoStack.length === 1) {
-            this.undoStack[0].end = getSelectPosition(vditor.sv.element).end;
+            this.undoStack[0].end = getElSelectedPosition(vditor.sv.element).end;
         }
     }
 
@@ -82,7 +82,7 @@ class Undo {
                 return;
             }
             this.lastText = text;
-            this.undoStack.push({patchList, end: getSelectPosition(vditor.sv.element).end});
+            this.undoStack.push({patchList, end: getElSelectedPosition(vditor.sv.element).end});
             if (this.undoStack.length > this.stackSize) {
                 this.undoStack.shift();
             }

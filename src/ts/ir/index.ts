@@ -38,14 +38,14 @@ class IR {
 
         this.element = divElement.firstElementChild as HTMLPreElement;
 
-        this.bindEvent(vditor); // 绑定事件：copy、paste、drop、compositionend、compositionstart、input、click、keyup
+        // this.bindEvent(vditor); // 绑定事件：copy、paste、drop、compositionend、compositionstart、input、click、keyup事件
 
         document.execCommand("DefaultParagraphSeparator", false, "p");  // 将回车后的段落分隔符改为p标签（默认：div）
 
-        focusEvent(vditor, this.element); // 焦点事件
-        blurEvent(vditor, this.element); // 失焦事件
-        hotkeyEvent(vditor, this.element);  // 快捷键
-        selectEvent(vditor, this.element);  // 选择事件
+        // focusEvent(vditor, this.element); // 焦点事件
+        // blurEvent(vditor, this.element); // 失焦事件
+        // hotkeyEvent(vditor, this.element);  // keydown事件（包括快捷键）
+        // selectEvent(vditor, this.element);  // 选择事件
     }
 
     private bindEvent(vditor: IVditor) {
@@ -96,6 +96,7 @@ class IR {
         });
 
         this.element.addEventListener("input", (event: InputEvent) => {
+          if (3<4) return // debug
           console.log('input')
             if (this.preventInput) {
                 this.preventInput = false;
@@ -160,15 +161,17 @@ class IR {
             }
         });
 
+        // keyup事件（该处理在hotkeyEvent处理（keydown处理）之后执行，即hotkeyEvent的中未处理或已处理未阻止事件继续传播后执行）
         this.element.addEventListener("keyup", (event) => {
-            console.log('keyup')
+            if (3<4) return // debug
+            console.log('keyup Event handler')
             if (event.isComposing || isCtrl(event)) {
                 return;
             }
             if (event.key === "Enter") {
                 scrollCenter(vditor);
             }
-            highlightToolbar(vditor);
+            highlightToolbar(vditor); // 根据当前编辑器中的光标位置，设定toolbar中按钮的状态
             if ((event.key === "Backspace" || event.key === "Delete") &&
                 vditor.ir.element.innerHTML !== "" && vditor.ir.element.childNodes.length === 1 &&
                 vditor.ir.element.firstElementChild && vditor.ir.element.firstElementChild.tagName === "P"
@@ -194,7 +197,7 @@ class IR {
                 });
             } else if (event.key.indexOf("Arrow") > -1) {
                 if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-                    processHint(vditor);
+                    processHint(vditor);  // 代码块语言提示
                 }
                 expandMarker(range, vditor);
             }
@@ -202,6 +205,7 @@ class IR {
             const previewRenderElement = hasClosestByClassName(range.startContainer, "vditor-ir__preview");
 
             if (previewRenderElement) {
+                console.log('previewRenderElement: ', previewRenderElement)
                 if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
                     if (previewRenderElement.previousElementSibling.firstElementChild) {
                         range.selectNodeContents(previewRenderElement.previousElementSibling.firstElementChild);
@@ -222,6 +226,7 @@ class IR {
                     return true;
                 }
             }
+            console.log('keyup is not handle')
         });
     }
 }

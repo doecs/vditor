@@ -3,7 +3,7 @@ import {getMarkdown} from "../markdown/getMarkdown";
 import {accessLocalStorage, isSafari} from "../util/compatibility";
 import {listToggle, renderToc} from "../util/fixBrowserBehavior";
 import {hasClosestBlock, hasClosestByAttribute, hasClosestByClassName, hasClosestByMatchTag} from "../util/hasClosest";
-import {getEditorRange, getSelectPosition, setRangeByWbr} from "../util/selection";
+import {getEditorRange, getElSelectedPosition, setRangeByWbr} from "../util/selection";
 import {highlightToolbar} from "./highlightToolbar";
 
 export const processHint = (vditor: IVditor) => {
@@ -18,7 +18,7 @@ export const processHint = (vditor: IVditor) => {
             range.selectNodeContents(preBeforeElement);
         } else {
             const matchLangData: IHintData[] = [];
-            const key = preBeforeElement.textContent.substring(0, getSelectPosition(preBeforeElement).start)
+            const key = preBeforeElement.textContent.substring(0, getElSelectedPosition(preBeforeElement).start)
                 .replace(Constants.ZWSP, "");
             Constants.CODE_LANGUAGES.forEach((keyName) => {
                 if (keyName.indexOf(key.toLowerCase()) > -1) {
@@ -32,7 +32,7 @@ export const processHint = (vditor: IVditor) => {
         }
     }
 };
-
+// 调用自定义事件函数及画面中其他元素的渲染、缓存等处理
 export const processAfterRender = (vditor: IVditor, options = {
     enableAddUndoStack: true,
     enableHint: false,
@@ -42,6 +42,7 @@ export const processAfterRender = (vditor: IVditor, options = {
         processHint(vditor);
     }
 
+    // 为什么用异步timeout延迟？？
     clearTimeout(vditor.ir.processTimeoutId);
     vditor.ir.processTimeoutId = window.setTimeout(() => {
         if (vditor.ir.composingLock && isSafari()) {
@@ -50,28 +51,28 @@ export const processAfterRender = (vditor: IVditor, options = {
         }
         const text = getMarkdown(vditor);
         if (typeof vditor.options.input === "function" && options.enableInput) {
-            vditor.options.input(text);
+            vditor.options.input(text); // 执行自定义input事件绑定函数
         }
 
         if (vditor.options.counter.enable) {
-            vditor.counter.render(vditor, text);
+            vditor.counter.render(vditor, text); // 显示字数
         }
-
+        // 如果启用cache且可以使用localStorage时，将md字符串写入localStorage缓存中。
         if (vditor.options.cache.enable && accessLocalStorage()) {
             localStorage.setItem(vditor.options.cache.id, text);
             if (vditor.options.cache.after) {
-                vditor.options.cache.after(text);
+                vditor.options.cache.after(text); // 执行自定义cache.after事件绑定函数
             }
         }
-
+        // 如果启用devtools，则渲染detools中的图片效果
         if (vditor.devtools) {
             vditor.devtools.renderEchart(vditor);
         }
-
+        // 如果启用回退栈则将当前状态推入回退栈中
         if (options.enableAddUndoStack) {
             vditor.irUndo.addToUndoStack(vditor);
         }
-    }, 800);
+    }, 10);  // bug fix。缩小input事件延迟800 -> 10
 };
 
 export const processHeading = (vditor: IVditor, value: string) => {

@@ -1,7 +1,7 @@
 import {getMarkdown} from "../markdown/getMarkdown";
 import {isCtrl} from "../util/compatibility";
 import {matchHotKey} from "../util/hotKey";
-import {getSelectPosition} from "../util/selection";
+import {getElSelectedPosition} from "../util/selection";
 import {formatRender} from "./formatRender";
 import {getCurrentLinePosition} from "./getCurrentLinePosition";
 import {insertText} from "./insertText";
@@ -10,11 +10,11 @@ export const processKeydown = (vditor: IVditor, event: KeyboardEvent) => {
     vditor.undo.recordFirstPosition(vditor);
 
     const editorElement = vditor.sv.element;
-    const position = getSelectPosition(editorElement);
+    const position = getElSelectedPosition(editorElement);
     const text = getMarkdown(vditor);
     // tab and shift + tab
     if (vditor.options.tab && event.key === "Tab") {
-        event.preventDefault();
+        event.preventDefault(); // tab key 阻止浏览器默认行为
         event.stopPropagation();
 
         const selectLinePosition = getCurrentLinePosition(position, text);
